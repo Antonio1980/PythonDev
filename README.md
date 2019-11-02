@@ -7,7 +7,6 @@ CONTENTS OF THIS FILE
  * Technologies
  * Recommended plugins
  * Requirements
- * Tests
  * Configuration
  * Author
 
@@ -41,14 +40,6 @@ REQUIREMENTS
 3. Python virtualenvironment installed out of the project and activated.
 4. Python interpreter configured.
 
-TESTS
------
-
-1 Run all tests:
-* $ pytest -v 
-
-2 Run tests as a package:
-* $ pytest -v 
 
 CONFIGURATION
 --------------

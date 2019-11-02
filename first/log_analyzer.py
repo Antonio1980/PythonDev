@@ -21,7 +21,7 @@ from datetime import datetime
 config = {
     "REPORT_SIZE": 1000,
     "REPORT_DIR": "./reports",
-    "LOG_DIR": "./log"
+    "LOG_DIR": "./logs"
 }
 
 regex = re.compile(
@@ -29,7 +29,7 @@ regex = re.compile(
     r"""\s(?P<request>/.+\sHTTP/\d\.\d).+(?P<request_time>\d\.\d+)$""")
 
 my_parser = argparse.ArgumentParser(prog='my_parser', usage='%(prog)s [path] ', argument_default=argparse.SUPPRESS,
-                                    description='Log Parser.', epilog='Enjoy the log parser! :)')
+                                    description='Log Parser.', epilog='Enjoy the logs parser! :)')
 
 my_parser.add_argument('-p', '--path', metavar='P', type=str, help='the path to config.json')
 
@@ -54,7 +54,7 @@ report_file = Path(config["REPORT_DIR"] + report_f_name)
 def define_logger():
     if "OUTPUT_LOG" in config.keys():
         log_dir = config["OUTPUT_LOG"]
-        filename = "/log_parser" + timestamp + ".log"
+        filename = "/log_parser" + timestamp + ".logs"
         log_file = Path(log_dir + filename)
 
         if not os.path.isdir(log_dir):
@@ -69,14 +69,11 @@ def define_logger():
 
 
 def check_report():
-    try:
-        if os.path.isdir(config["REPORT_DIR"]):
-            logging.info(f"Report directory is: {config['REPORT_DIR']}")
-        if os.path.isfile(report_file):
-            logging.exception(f"Report {report_f_name} already processed!")
-            sys.exit()
-    except BaseException as e:
-        logging.exception(f"Error occurred while sorting log dirs: {e}")
+    if os.path.isdir(config["REPORT_DIR"]):
+        logging.info(f"Report directory is: {config['REPORT_DIR']}")
+    if os.path.isfile(report_file):
+        logging.exception(f"Report {report_f_name} already processed!")
+        sys.exit()
 
 
 def sort_logs_dir(dir_):
@@ -84,7 +81,7 @@ def sort_logs_dir(dir_):
         logging.info("Sorting nginx logs dir...")
         return sorted(os.listdir(dir_), key=lambda s: s[9:])
     except BaseException as e:
-        logging.exception(f"Error occurred while sorting log dirs: {e}")
+        logging.exception(f"Error occurred while sorting logs dirs: {e}")
 
 
 def render_template(*table_json):
@@ -134,7 +131,7 @@ def parse_ngnix_logs():
                             counter += 1
                             _parse_line(match)
             else:
-                if 'nginx' in given_file and "ui.log" in given_file.split("-")[2]:
+                if 'nginx' in given_file and "ui.logs" in given_file.split("-")[2]:
                     with open(given_file) as file:
                         for line in file.readlines():
                             match = regex.search(line)
@@ -144,7 +141,7 @@ def parse_ngnix_logs():
         result_set["counter"] = counter
         return result_set
     except BaseException as e:
-        logging.exception(f"Error occurred while parsing log file: {e}")
+        logging.exception(f"Error occurred while parsing logs file: {e}")
 
 
 def get_max(list_):
@@ -209,8 +206,8 @@ def main():
     logging.basicConfig(filename=define_logger(), level=logging.DEBUG)
     check_report()
     parsed_dict = parse_ngnix_logs()
-    builded_dict = build_dict(parsed_dict)
-    cleaned_dict = clean_dict(builded_dict)
+    _dict = build_dict(parsed_dict)
+    cleaned_dict = clean_dict(_dict)
     template = render_template(*cleaned_dict)
     save_report(template)
 
