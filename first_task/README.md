@@ -44,9 +44,10 @@ REQUIREMENTS
 CONFIGURATION
 --------------
 
-- Parse default configuration defined as config dictionary inside the log_parser.py.
+- Default configuration defined as dictionary object (config) inside the log_analyzer.py.
 
-- To pass custom configuration use command line option -p (--path) with path to json config.
+- To pass custom configuration use command line option -p (--path) with path to json config,
+example of config.json is in config folder.
 
 
 AUTHOR
