@@ -28,7 +28,7 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
-
+*.gz
 # PyInstaller
 #  Usually these files are written by a python script from a template
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.
@@ -236,6 +236,6 @@ Temporary Items
 01_advanced_basics/homework/report-2017.06.30.html
 01_advanced_basics/homework/report.html
 01_advanced_basics/lecture.ipynb
-first/logs/
-first/output/
-first/reports/
+first_task/logs/
+first_task/output/
+first_task/reports/
