@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 import os
 import re
@@ -25,18 +24,17 @@ config = {
 }
 
 regex = re.compile(
-    r"""^(?P<ip>\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}) -?.+ - \[(?P<timestamp>.*?)\]\s\"(?P<method>[A-Z][A-Z][A-Z])"""
+    r"""^(?P<ip>\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}) -?.+ - \[(?P<timestamp_>.*?)\]\s\"(?P<method>[A-Z][A-Z][A-Z])"""
     r"""\s(?P<request>/.+\sHTTP/\d\.\d).+(?P<request_time>\d\.\d+)$""")
 
 my_parser = argparse.ArgumentParser(prog='my_parser', usage='%(prog)s [path] ', argument_default=argparse.SUPPRESS,
                                     description='Log Parser.', epilog='Enjoy the logs parser! :)')
-
-my_parser.add_argument('-p', '--path', metavar='P', type=str, help='the path to config.json')
-
+my_parser.add_argument('-p', '--path', metavar='P', type=str, default='config/config.json', help='path to config.json')
 args = my_parser.parse_args()
 
-if hasattr(args, "path"):
 
+def build_config():
+    print("Building configuration.")
     config_file = args.path
 
     if os.path.isfile(config_file):
@@ -45,43 +43,40 @@ if hasattr(args, "path"):
             json_dict = json.load(j)
             config.update(json_dict)
 
-timestamp = str(int(datetime.today().timestamp()))
-today = str(datetime.today().date())
-report_f_name = '/report-' + today + '.html'
-report_file = Path(config["REPORT_DIR"] + report_f_name)
 
-
-def define_logger():
+def build_output_logging():
+    timestamp_ = str(int(datetime.today().timestamp()))
     if "OUTPUT_LOG" in config.keys():
         log_dir = config["OUTPUT_LOG"]
-        filename = "/log_parser" + timestamp + ".logs"
+        filename = f"/log_parser{timestamp_}.logs"
         log_file = Path(log_dir + filename)
 
         if not os.path.isdir(log_dir):
             os.makedirs(log_dir)
             print("Successfully created the directory %s " % log_dir)
             print(f"Log file: {log_file}")
-            return log_file
-        else:
-            return log_file
-    else:
-        return None
+        return log_file
 
 
 def check_report():
+    today_ = str(datetime.today().date())
+    report_f_name = f'/report-{today_}.html'
+    report_file = Path(config["REPORT_DIR"] + report_f_name)
     if os.path.isdir(config["REPORT_DIR"]):
         logging.info(f"Report directory is: {config['REPORT_DIR']}")
     if os.path.isfile(report_file):
         logging.exception(f"Report {report_f_name} already processed!")
         sys.exit()
+    else:
+        return report_file
 
 
 def sort_logs_dir(dir_):
     try:
         logging.info("Sorting nginx logs dir...")
         return sorted(os.listdir(dir_), key=lambda s: s[9:])
-    except BaseException as e:
-        logging.exception(f"Error occurred while sorting logs dirs: {e}")
+    except (IndexError, ValueError) as ex:
+        logging.exception(f"Error occurred while sorting logs dirs: {ex}")
 
 
 def render_template(*table_json):
@@ -94,8 +89,8 @@ def render_template(*table_json):
 
         table_json = {"table_json": table_json}
         return template.safe_substitute(table_json)
-    except BaseException as e:
-        logging.exception(f"Error occurred while rendering template: {e}")
+    except (IndexError, ValueError) as ex:
+        logging.exception(f"Error occurred while rendering template: {ex}")
 
 
 def parse_ngnix_logs():
@@ -140,8 +135,8 @@ def parse_ngnix_logs():
                                 _parse_line(match)
         result_set["counter"] = counter
         return result_set
-    except BaseException as e:
-        logging.exception(f"Error occurred while parsing logs file: {e}")
+    except (IndexError, ValueError) as ex:
+        logging.exception(f"Error occurred while parsing logs file: {ex}")
 
 
 def get_max(list_):
@@ -151,8 +146,8 @@ def get_max(list_):
             if i > max_:
                 max_ = i
         return max_
-    except BaseException as e:
-        logging.exception(f"Error occurred while calculating max value: {e}")
+    except (IndexError, ValueError) as ex:
+        logging.exception(f"Error occurred while calculating max value: {ex}")
 
 
 def build_dict(table_):
@@ -167,14 +162,14 @@ def build_dict(table_):
 
         for item in table_.items():
             item[1]["time_avg"] = round(item[1]["time_sum"] / item[1]["count"], 9)
-            item[1]["time_max"] = get_max(item[1]["times"])
+            item[1]["time_max"] = max(item[1]["times"])
             item[1]["time_med"] = statistics.median(item[1]["times"])
             item[1]["time_perc"] = round((item[1]["time_sum"] / timer) * 100, 9)
             item[1]["count_perc"] = round((item[1]["count"] / counter) * 100, 5)
             item[1]["time_sum"] = round(item[1]["time_sum"], 9)
         return table_
-    except BaseException as e:
-        logging.exception(f"Error occurred while building dictionary: {e}")
+    except (IndexError, ValueError) as ex:
+        logging.exception(f"Error occurred while building dictionary: {ex}")
 
 
 def clean_dict(table_):
@@ -182,35 +177,38 @@ def clean_dict(table_):
         logging.info("Completely building dictionary object.")
         [item[1].pop("times") for item in table_.items()]
         return [item[1] for item in table_.items()]
-    except BaseException as e:
-        logging.exception(f"Error occurred while cleaning dictionary: {e}")
+    except (IndexError, ValueError) as ex:
+        logging.exception(f"Error occurred while cleaning dictionary: {ex}")
 
 
-def save_report(result):
+def save_report(report_file_, result):
     try:
         logging.info("Writing report html...")
         if os.path.isdir(config["REPORT_DIR"]):
-            open(report_file, 'w+').close()
+            open(report_file_, 'w+').close()
         else:
             os.makedirs(config["REPORT_DIR"])
-            open(report_file, 'w+').close()
-        with open(report_file, "r+") as f:
-            s = f.read()
+            open(report_file_, 'w+').close()
+        with open(report_file_, "r+") as f:
             f.seek(0)
-            f.write(result + s)
-    except BaseException as e:
-        logging.exception(f"Error occurred while saving report: {e}")
+            f.write(result)
+    except (IndexError, ValueError) as ex:
+        logging.exception(f"Error occurred while saving report: {ex}")
 
 
 def main():
-    logging.basicConfig(filename=define_logger(), level=logging.DEBUG)
-    check_report()
+    build_config()
+    logging.basicConfig(filename=build_output_logging(), level=logging.DEBUG)
+    r_file = check_report()
     parsed_dict = parse_ngnix_logs()
     _dict = build_dict(parsed_dict)
     cleaned_dict = clean_dict(_dict)
     template = render_template(*cleaned_dict)
-    save_report(template)
+    save_report(r_file, template)
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        logging.error(e)
