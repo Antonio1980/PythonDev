@@ -1,0 +1,12 @@
+version: '3.4'
+
+services:
+
+  minimal-notebook:
+      build: .
+      container_name: python_dev
+      ports:
+        - "8891:8888"
+      volumes:
+        - /Users/antons/.jupyter/jupyter_notebook_config.py:/root/.jupyter/jupyter_notebook_config.py
+        - /Users/antons/MyProjects/PythonDev:/notebooks
