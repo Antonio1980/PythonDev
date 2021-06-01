@@ -163,9 +163,9 @@ def build_dict(table_):
         for item in table_.items():
             item[1]["time_avg"] = round(item[1]["time_sum"] / item[1]["count"], 9)
             item[1]["time_max"] = max(item[1]["times"])
-            item[1]["time_med"] = statistics.median(item[1]["times"])
+            item[1]["time_med"] = round(statistics.median(item[1]["times"]), 9)
             item[1]["time_perc"] = round((item[1]["time_sum"] / timer) * 100, 9)
-            item[1]["count_perc"] = round((item[1]["count"] / counter) * 100, 5)
+            item[1]["count_perc"] = round((item[1]["count"] / counter) * 100, 9)
             item[1]["time_sum"] = round(item[1]["time_sum"], 9)
         return table_
     except (IndexError, ValueError) as ex:
