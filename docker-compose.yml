@@ -8,5 +8,5 @@ services:
       ports:
         - "8891:8888"
       volumes:
-        - /Users/antons/.jupyter/jupyter_notebook_config.py:/root/.jupyter/jupyter_notebook_config.py
-        - /Users/antons/MyProjects/PythonDev:/notebooks
+        - /Users/antonshipulin/.jupyter/jupyter_notebook_config.py:/root/.jupyter/jupyter_notebook_config.py
+        - /Users/antonshipulin/LOCAL/PyCharmProjects/PythonDev:/notebooks

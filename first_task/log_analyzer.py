@@ -166,7 +166,7 @@ def build_dict(table_):
             item[1]["time_med"] = round(statistics.median(item[1]["times"]), 9)
             item[1]["time_perc"] = round((item[1]["time_sum"] / timer) * 100, 9)
             item[1]["count_perc"] = round((item[1]["count"] / counter) * 100, 9)
-            item[1]["time_sum"] = round(item[1]["time_sum"], 9)
+            item[1]["time_sum"] = round(item[1]["time_sum"], 3)
         return table_
     except (IndexError, ValueError) as ex:
         logging.exception(f"Error occurred while building dictionary: {ex}")

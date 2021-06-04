@@ -26,6 +26,6 @@ WORKDIR /notebooks
 
 COPY . /notebooks
 
-RUN pwd && ls -la
-
 RUN pip install -r /notebooks/requirements.txt
+
+RUN pwd && ls -la
