@@ -29,13 +29,14 @@ regex = re.compile(
 
 my_parser = argparse.ArgumentParser(prog='my_parser', usage='%(prog)s [path] ', argument_default=argparse.SUPPRESS,
                                     description='Log Parser.', epilog='Enjoy the logs parser! :)')
-my_parser.add_argument('-p', '--path', metavar='P', type=str, default='config/config.json', help='path to config.json')
+my_parser.add_argument('-p', '--path', metavar='P', type=str, default='config/', help='path to config.json.bak')
 args = my_parser.parse_args()
 
 
 def build_config():
     print("Building configuration.")
-    config_file = args.path
+    config_path = args.path
+    config_file = config_path + "config.json"
 
     if os.path.isfile(config_file):
         print('The config_file found in provided path.')
@@ -59,6 +60,7 @@ def build_output_logging():
 
 
 def check_report():
+    logging.info("The configuration successfully build.")
     today_ = str(datetime.today().date())
     report_f_name = f'/report-{today_}.html'
     report_file = Path(config["REPORT_DIR"] + report_f_name)

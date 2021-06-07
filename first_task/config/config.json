@@ -1,6 +1,0 @@
-{
-  "REPORT_SIZE": 5000,
-  "REPORT_DIR": "./reports",
-  "LOG_DIR": "./logs",
-  "OUTPUT_LOG": "./output"
-}
