@@ -17,58 +17,88 @@ from datetime import datetime
 #                     '"$http_user_agent" "$http_x_forwarded_for" "$http_X_REQUEST_ID" "$http_X_RB_USER" '
 #                     '$request_time';
 
+regex = re.compile(
+    r"""^(?P<ip>\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}) -?.+ - \[(?P<timestamp_>.*?)\]\s\"(?P<method>[A-Z][A-Z][A-Z])"""
+    r"""\s(?P<request>/.+\sHTTP/\d\.\d).+(?P<request_time>\d\.\d+)$""")
+
+
 config = {
     "REPORT_SIZE": 1000,
     "REPORT_DIR": "./reports",
     "LOG_DIR": "./logs"
 }
 
-regex = re.compile(
-    r"""^(?P<ip>\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}) -?.+ - \[(?P<timestamp_>.*?)\]\s\"(?P<method>[A-Z][A-Z][A-Z])"""
-    r"""\s(?P<request>/.+\sHTTP/\d\.\d).+(?P<request_time>\d\.\d+)$""")
 
-my_parser = argparse.ArgumentParser(prog='my_parser', usage='%(prog)s [path] ', argument_default=argparse.SUPPRESS,
-                                    description='Log Parser.', epilog='Enjoy the logs parser! :)')
-my_parser.add_argument('-p', '--path', metavar='P', type=str, default='config/', help='path to config.json.bak')
-args = my_parser.parse_args()
+def handle_err(err):
+    print(err)
+    exit(-1)
 
 
-def build_config():
-    print("Building configuration.")
-    config_path = args.path
-    config_file = config_path + "config.json"
+class Config:
 
-    if os.path.isfile(config_file):
-        print('The config_file found in provided path.')
-        with open(config_file) as j:
-            json_dict = json.load(j)
-            config.update(json_dict)
+    __slots__ = (
+        "REPORT_SIZE",
+        "REPORT_DIR",
+        "LOG_DIR",
+        "OUTPUT_LOG",
+    )
+
+    def __init__(self):
+        try:
+            my_parser = argparse.ArgumentParser(prog='my_parser', usage='%(prog)s [path] ',
+                                                argument_default=argparse.SUPPRESS,
+                                                description='Log Parser.', epilog='Enjoy the logs parser! :)')
+            my_parser.add_argument('-p', '--path', metavar='P', type=str, default='config/',
+                                   help='path to config.json.bak')
+            args = my_parser.parse_args()
+            print("Building configuration.")
+            config_path = args.path
+            config_file = config_path + "config.json"
+
+            if os.path.isfile(config_file):
+                print('The config_file found in provided path.')
+                with open(config_file) as j:
+                    json_dict = json.load(j)
+                    config.update(json_dict)
+            for config_key in config:
+                setattr(self, config_key, config[config_key])
+        except (FileNotFoundError, IndexError, json.JSONDecodeError) as ex:
+            handle_err(f"Error with config building {ex}")
+
+
+settings = Config()
 
 
 def build_output_logging():
-    timestamp_ = str(int(datetime.today().timestamp()))
-    if "OUTPUT_LOG" in config.keys():
-        log_dir = config["OUTPUT_LOG"]
+    try:
+        settings.__getattribute__("OUTPUT_LOG")
+    except AttributeError as err:
+        setattr(settings, "OUTPUT_LOG", None)
+
+    if settings.OUTPUT_LOG:
+        timestamp_ = str(int(datetime.today().timestamp()))
+        log_dir = settings.OUTPUT_LOG
         filename = f"/log_parser{timestamp_}.logs"
         log_file = Path(log_dir + filename)
-
         if not os.path.isdir(log_dir):
             os.makedirs(log_dir)
             print("Successfully created the directory %s " % log_dir)
             print(f"Log file: {log_file}")
         return log_file
+    else:
+        return None
 
 
 def check_report():
     logging.info("The configuration successfully build.")
     today_ = str(datetime.today().date())
     report_f_name = f'/report-{today_}.html'
-    report_file = Path(config["REPORT_DIR"] + report_f_name)
-    if os.path.isdir(config["REPORT_DIR"]):
-        logging.info(f"Report directory is: {config['REPORT_DIR']}")
+    report_file = Path(settings.REPORT_DIR + report_f_name)
+    if os.path.isdir(settings.REPORT_DIR):
+        logging.info(f"Report directory is: {settings.REPORT_DIR}")
     if os.path.isfile(report_file):
-        logging.exception(f"Report {report_f_name} already processed!")
-        sys.exit()
+        logging.info(f"Report {report_f_name} already processed!")
+        sys.exit(0)
     else:
         return report_file
 
@@ -86,8 +116,8 @@ def render_template(*table_json):
         logging.info("Rendering template...")
         t = open('report.html', 'r+').read()
         template = Template(t)
-        logging.info(f"REPORT SIZE {config['REPORT_SIZE']}")
-        table_json = sorted(table_json, key=lambda item: item["time_sum"], reverse=True)[:config["REPORT_SIZE"]]
+        logging.info(f"REPORT SIZE {settings.REPORT_SIZE}")
+        table_json = sorted(table_json, key=lambda item: item["time_sum"], reverse=True)[:settings.REPORT_SIZE]
 
         table_json = {"table_json": table_json}
         return template.safe_substitute(table_json)
@@ -116,10 +146,10 @@ def parse_ngnix_logs():
                 result_set[uri]["time_sum"] += float(match_line.groups()[4])
 
         logging.info("Starting to parse logs...")
-        dir_ = sort_logs_dir(config['LOG_DIR'])
+        dir_ = sort_logs_dir(settings.LOG_DIR)
 
         for archive in dir_:
-            given_file = os.path.join(config['LOG_DIR'], archive)
+            given_file = os.path.join(settings.LOG_DIR, archive)
             if given_file.endswith('.gz') and 'nginx' in given_file:
                 with gzip.open(given_file, 'r', "utf-8") as file:
                     for line in file.readlines():
@@ -186,10 +216,10 @@ def clean_dict(table_):
 def save_report(report_file_, result):
     try:
         logging.info("Writing report html...")
-        if os.path.isdir(config["REPORT_DIR"]):
+        if os.path.isdir(settings.REPORT_DIR):
             open(report_file_, 'w+').close()
         else:
-            os.makedirs(config["REPORT_DIR"])
+            os.makedirs(settings.REPORT_DIR)
             open(report_file_, 'w+').close()
         with open(report_file_, "r+") as f:
             f.seek(0)
@@ -199,7 +229,6 @@ def save_report(report_file_, result):
 
 
 def main():
-    build_config()
     logging.basicConfig(filename=build_output_logging(), level=logging.DEBUG)
     r_file = check_report()
     parsed_dict = parse_ngnix_logs()
